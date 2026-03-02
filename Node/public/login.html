@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Login</title>
+    <style>
+      body {
+        font-family: monospace;
+        max-width: 360px;
+        margin: 80px auto;
+        padding: 0 16px;
+      }
+      input {
+        display: block;
+        width: 100%;
+        padding: 8px;
+        margin: 6px 0 12px;
+        border: 1px solid #ccc;
+        font-family: monospace;
+        font-size: 13px;
+      }
+      button {
+        padding: 8px 16px;
+        cursor: pointer;
+        font-family: monospace;
+        font-size: 13px;
+      }
+      #msg {
+        margin-top: 12px;
+        font-size: 13px;
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Clinic API — Login</h2>
+    <label>Email</label>
+    <input id="email" type="email" placeholder="john@email.com" />
+    <label>Password</label>
+    <input id="password" type="password" />
+    <button onclick="login()">Login</button>
+    <div id="msg"></div>
+
+    <script>
+      async function login() {
+        const msg = document.getElementById("msg");
+        msg.innerText = "";
+        try {
+          const res = await fetch("http://localhost:3000/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: document.getElementById("email").value,
+              password: document.getElementById("password").value,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            msg.innerText = data.message || "Login failed";
+            return;
+          }
+          localStorage.setItem("accessToken", data.accessToken);
+          localStorage.setItem("refreshToken", data.refreshToken || "");
+          window.location.href = "/index.html";
+        } catch (err) {
+          msg.innerText = "Error: " + err.message;
+        }
+      }
+    </script>
+  </body>
+</html>

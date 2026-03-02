@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clinic API Test</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: monospace; max-width: 700px; margin: 40px auto; padding: 0 16px; background: #fff; color: #111; }
+      h2 { border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 32px; }
+      h3 { margin-bottom: 6px; color: #555; }
+      input, select { display: block; width: 100%; padding: 6px; margin: 4px 0; border: 1px solid #ccc; font-family: monospace; font-size: 13px; }
+      button { padding: 6px 12px; margin: 4px 2px 4px 0; cursor: pointer; font-family: monospace; font-size: 13px; }
+      pre { background: #111; color: #0f0; padding: 12px; font-size: 12px; overflow: auto; max-height: 300px; white-space: pre-wrap; }
+      .row { display: flex; gap: 8px; }
+      .row input { flex: 1; }
+      label { font-size: 12px; color: #555; margin-top: 6px; display: block; }
+      hr { margin: 24px 0; border: none; border-top: 1px solid #eee; }
+      #token-box { word-break: break-all; background: #f5f5f5; padding: 8px; font-size: 11px; color: #333; min-height: 24px; }
+    </style>
+  </head>
+  <body>
+
+    <h2>Auth</h2>
+
+    <h3>Register</h3>
+    <label>Name</label><input id="r-name" placeholder="John Doe" />
+    <label>Email</label><input id="r-email" placeholder="john@email.com" />
+    <label>Password</label><input id="r-password" type="password" placeholder="min 6 chars" />
+    <label>Role</label>
+    <select id="r-role">
+      <option value="RECEPTIONIST">RECEPTIONIST</option>
+      <option value="DOCTOR">DOCTOR</option>
+    </select>
+    <button onclick="register()">POST /api/auth/register</button>
+
+    <h3>Login</h3>
+    <label>Email</label><input id="l-email" placeholder="john@email.com" />
+    <label>Password</label><input id="l-password" type="password" />
+    <button onclick="login()">POST /api/auth/login</button>
+
+    <h3>Token</h3>
+    <div id="token-box">— not logged in —</div>
+    <button onclick="getMe()">GET /api/auth/me</button>
+    <button onclick="refresh()">POST /api/auth/refresh</button>
+    <button onclick="logout()">POST /api/auth/logout</button>
+
+    <hr />
+
+    <h2>Patients <small style="font-size:12px;color:#888">(requires RECEPTIONIST)</small></h2>
+
+    <h3>Create / Update Patient</h3>
+    <label>Name</label><input id="p-name" />
+    <label>Phone</label><input id="p-phone" />
+    <label>Notes</label><input id="p-notes" />
+    <label>Gender</label>
+    <select id="p-gender">
+      <option value="MALE">MALE</option>
+      <option value="FEMALE">FEMALE</option>
+    </select>
+    <button onclick="createPatient()">POST /api/patients</button>
+    <button onclick="getPatients()">GET /api/patients</button>
+
+    <h3>Patient by ID</h3>
+    <label>Patient ID</label>
+    <div class="row">
+      <input id="p-id" placeholder="uuid" />
+      <button onclick="getPatient()">GET</button>
+      <button onclick="updatePatient()">PUT</button>
+      <button onclick="deletePatient()">DELETE</button>
+    </div>
+
+    <hr />
+
+    <h2>Appointments</h2>
+
+    <h3>Create / Update Appointment</h3>
+    <label>Patient Name</label><input id="a-patient-name" />
+    <label>Doctor Name</label><input id="a-doctor-name" />
+    <label>Date (MM/DD/YYYY)</label><input id="a-date" placeholder="02/10/2026" />
+    <label>Status</label>
+    <select id="a-status">
+      <option value="SCHEDULED">SCHEDULED</option>
+      <option value="CONFIRMED">CONFIRMED</option>
+      <option value="MISSED">MISSED</option>
+      <option value="REALIZED">REALIZED</option>
+      <option value="CANCELLED">CANCELLED</option>
+    </select>
+    <button onclick="createAppointment()">POST /api/appointments <small>(DOCTOR)</small></button>
+    <button onclick="getAppointments()">GET /api/appointments <small>(RECEPTIONIST)</small></button>
+
+    <h3>Appointment by ID</h3>
+    <div class="row">
+      <input id="a-id" placeholder="uuid" />
+      <button onclick="getAppointment()">GET</button>
+      <button onclick="updateAppointment()">PUT</button>
+      <button onclick="deleteAppointment()">DELETE <small>(DOCTOR)</small></button>
+    </div>
+
+    <h2>Response</h2>
+    <pre id="response">—</pre>
+
+    <script>
+      const BASE = "http://localhost:3000";
+      let accessToken = localStorage.getItem("accessToken") || "";
+      let refreshToken = localStorage.getItem("refreshToken") || "";
+
+      if (accessToken) document.getElementById("token-box").innerText = accessToken;
+
+      function show(data) {
+        document.getElementById("response").innerText =
+          typeof data === "string" ? data : JSON.stringify(data, null, 2);
+      }
+
+      async function api(path, method = "GET", body) {
+        try {
+          const res = await fetch(`${BASE}${path}`, {
+            method,
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: body ? JSON.stringify(body) : undefined,
+          });
+          const text = await res.text();
+          try { show(JSON.parse(text)); } catch { show(text); }
+        } catch (err) {
+          show("Error: " + err.message);
+        }
+      }
+
+      async function register() {
+        await api("/api/auth/register", "POST", {
+          name: document.getElementById("r-name").value,
+          email: document.getElementById("r-email").value,
+          password: document.getElementById("r-password").value,
+          role: document.getElementById("r-role").value,
+        });
+      }
+
+      async function login() {
+        try {
+          const res = await fetch(`${BASE}/api/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: document.getElementById("l-email").value,
+              password: document.getElementById("l-password").value,
+            }),
+          });
+          const data = await res.json();
+          show(data);
+          if (data.accessToken) {
+            accessToken = data.accessToken;
+            refreshToken = data.refreshToken || "";
+            localStorage.setItem("accessToken", accessToken);
+            localStorage.setItem("refreshToken", refreshToken);
+            document.getElementById("token-box").innerText = accessToken;
+          }
+        } catch (err) {
+          show("Error: " + err.message);
+        }
+      }
+
+      function getMe() { api("/api/auth/me"); }
+
+      function refresh() { api("/api/auth/refresh", "POST", { refreshToken }); }
+
+      async function logout() {
+        await api("/api/auth/logout", "POST", { refreshToken });
+        accessToken = "";
+        refreshToken = "";
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        document.getElementById("token-box").innerText = "— logged out —";
+      }
+
+      // Patients
+      function createPatient() {
+        api("/api/patients", "POST", {
+          name: document.getElementById("p-name").value,
+          phone: document.getElementById("p-phone").value,
+          notes: document.getElementById("p-notes").value,
+          gender: document.getElementById("p-gender").value,
+        });
+      }
+      function getPatients() { api("/api/patients"); }
+      function getPatient() { api(`/api/patients/${document.getElementById("p-id").value}`); }
+      function deletePatient() { api(`/api/patients/${document.getElementById("p-id").value}`, "DELETE"); }
+      function updatePatient() {
+        api(`/api/patients/${document.getElementById("p-id").value}`, "PUT", {
+          name: document.getElementById("p-name").value,
+          phone: document.getElementById("p-phone").value,
+          notes: document.getElementById("p-notes").value,
+          gender: document.getElementById("p-gender").value,
+        });
+      }
+
+      // Appointments
+      function createAppointment() {
+        api("/api/appointments", "POST", {
+          patientName: document.getElementById("a-patient-name").value,
+          doctorName: document.getElementById("a-doctor-name").value,
+          date: document.getElementById("a-date").value,
+          status: document.getElementById("a-status").value,
+        });
+      }
+      function getAppointments() { api("/api/appointments"); }
+      function getAppointment() { api(`/api/appointments/${document.getElementById("a-id").value}`); }
+      function deleteAppointment() { api(`/api/appointments/${document.getElementById("a-id").value}`, "DELETE"); }
+      function updateAppointment() {
+        api(`/api/appointments/${document.getElementById("a-id").value}`, "PUT", {
+          patientName: document.getElementById("a-patient-name").value,
+          doctorName: document.getElementById("a-doctor-name").value,
+          date: document.getElementById("a-date").value,
+          status: document.getElementById("a-status").value,
+        });
+      }
+    </script>
+  </body>
+</html>

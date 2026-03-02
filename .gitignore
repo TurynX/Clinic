@@ -1,0 +1,13 @@
+# Node
+Node/node_modules/
+Node/dist/
+Node/.env
+Node/.env.test
+
+# Python
+Python/.venv/
+Python/__pycache__/
+*.pyc
+
+# Geral
+.env
