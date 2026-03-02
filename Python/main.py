@@ -1,5 +1,6 @@
 import io
 import os
+from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -8,6 +9,8 @@ from pypdf import PdfReader
 from groq import Groq
 from pydantic import BaseModel
 from datetime import datetime
+
+load_dotenv()
 
 current_year = datetime.now().year
 
