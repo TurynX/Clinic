@@ -112,31 +112,34 @@ Tests use a separate database configured in `.env.test`.
 ## 📡 API Routes
 
 ### Auth
-| Method | Route | Role | Description |
-|--------|-------|------|-------------|
-| POST | `/api/auth/register` | Public | Register user |
-| POST | `/api/auth/login` | Public | Login |
-| POST | `/api/auth/refresh` | Auth | Refresh token |
-| POST | `/api/auth/logout` | Auth | Logout |
-| GET | `/api/auth/me` | Auth | Get current user |
+
+| Method | Route                | Role   | Description      |
+| ------ | -------------------- | ------ | ---------------- |
+| POST   | `/api/auth/register` | Public | Register user    |
+| POST   | `/api/auth/login`    | Public | Login            |
+| POST   | `/api/auth/refresh`  | Auth   | Refresh token    |
+| POST   | `/api/auth/logout`   | Auth   | Logout           |
+| GET    | `/api/auth/me`       | Auth   | Get current user |
 
 ### Patients
-| Method | Route | Role | Description |
-|--------|-------|------|-------------|
-| POST | `/api/patients` | Receptionist | Create patient |
-| GET | `/api/patients` | Receptionist | List patients |
-| GET | `/api/patients/:id` | Receptionist | Get patient |
-| PUT | `/api/patients/:id` | Receptionist | Update patient |
+
+| Method | Route               | Role         | Description    |
+| ------ | ------------------- | ------------ | -------------- |
+| POST   | `/api/patients`     | Receptionist | Create patient |
+| GET    | `/api/patients`     | Receptionist | List patients  |
+| GET    | `/api/patients/:id` | Receptionist | Get patient    |
+| PUT    | `/api/patients/:id` | Receptionist | Update patient |
 | DELETE | `/api/patients/:id` | Receptionist | Delete patient |
 
 ### Appointments
-| Method | Route | Role | Description |
-|--------|-------|------|-------------|
-| POST | `/api/appointments` | Doctor | Create appointment |
-| GET | `/api/appointments` | Receptionist | List appointments |
-| GET | `/api/appointments/:id` | Receptionist | Get appointment |
-| PUT | `/api/appointments/:id` | Doctor | Update appointment |
-| DELETE | `/api/appointments/:id` | Doctor | Delete appointment |
+
+| Method | Route                   | Role         | Description        |
+| ------ | ----------------------- | ------------ | ------------------ |
+| POST   | `/api/appointments`     | Doctor       | Create appointment |
+| GET    | `/api/appointments`     | Receptionist | List appointments  |
+| GET    | `/api/appointments/:id` | Receptionist | Get appointment    |
+| PUT    | `/api/appointments/:id` | Doctor       | Update appointment |
+| DELETE | `/api/appointments/:id` | Doctor       | Delete appointment |
 
 ---
 
