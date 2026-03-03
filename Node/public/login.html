@@ -650,15 +650,21 @@
             <input id="p-name" />
           </div>
           <div class="field">
-            <label>Phone</label>
-            <input id="p-phone" />
+            <label>Email</label>
+            <input id="p-email" placeholder="john@email.com" />
           </div>
         </div>
         <div class="grid-2">
           <div class="field">
+            <label>Phone</label>
+            <input id="p-phone" />
+          </div>
+          <div class="field">
             <label>Notes</label>
             <input id="p-notes" />
           </div>
+        </div>
+        <div class="grid-2">
           <div class="field">
             <label>Gender</label>
             <select id="p-gender">
@@ -981,8 +987,9 @@
   }
 
   function createPatient() {
-    api('/api/patients', 'POST', {
+    api(`/api/patients`, 'POST', {
       name: document.getElementById('p-name').value,
+      email: document.getElementById('p-email').value,
       phone: document.getElementById('p-phone').value,
       notes: document.getElementById('p-notes').value,
       gender: document.getElementById('p-gender').value,
