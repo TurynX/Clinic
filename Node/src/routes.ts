@@ -24,8 +24,6 @@ import {
   requireRoleDoctorOrReceptionist,
   requireRoleReceptionist,
 } from "./middlewares/jwt.js";
-import axios from "axios";
-import FormData from "form-data";
 import {
   askToAiController,
   pdfConntroller,
