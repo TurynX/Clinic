@@ -29,9 +29,9 @@ export async function askToAiController(
     return rep.status(400).send({ error: "Question not found" });
   }
 
-  const aiResponse = await axios.post("http://localhost:8000/ask", {
+  const aiResponse = await axios.post("http://localhost:8000/chat", {
     question,
   });
 
-  return { Response: aiResponse.data.analysis };
+  return { Response: aiResponse.data.response };
 }
