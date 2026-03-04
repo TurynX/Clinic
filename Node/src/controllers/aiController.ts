@@ -12,7 +12,7 @@ export async function pdfConntroller(req: FastifyRequest, rep: FastifyReply) {
   formData.append("file", buffer, { filename: data.filename });
 
   const pythonResponse = await axios.post(
-    "http://localhost:8000/upload",
+    "https://clinic-ss2c.onrender.com/upload",
     formData,
     { headers: formData.getHeaders() },
   );
@@ -29,7 +29,7 @@ export async function askToAiController(
     return rep.status(400).send({ error: "Question not found" });
   }
 
-  const aiResponse = await axios.post("http://localhost:8000/chat", {
+  const aiResponse = await axios.post("https://clinic-ss2c.onrender.com/chat", {
     question,
   });
 
