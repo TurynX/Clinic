@@ -1,1110 +1,1352 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Clinic API</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0a0e1a;
-      --surface: #111827;
-      --surface2: #1a2235;
-      --border: #1e2d45;
-      --accent: #00d4aa;
-      --accent2: #4f9cf9;
-      --accent3: #f97316;
-      --text: #e2e8f0;
-      --text-muted: #64748b;
-      --success: #10b981;
-      --error: #ef4444;
-      --warn: #f59e0b;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'DM Mono', monospace;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* Background grid */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 240px 1fr 340px;
-      min-height: 100vh;
-      position: relative;
-      z-index: 1;
-    }
-
-    /* SIDEBAR */
-    .sidebar {
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      padding: 24px 0;
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .logo {
-      padding: 0 20px 24px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 16px;
-    }
-
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 10px;
-      font-size: 16px;
-    }
-
-    .logo h1 {
-      font-family: 'Syne', sans-serif;
-      font-size: 15px;
-      font-weight: 800;
-      color: var(--text);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    .logo p {
-      font-size: 10px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    .nav-section {
-      padding: 8px 12px 4px;
-    }
-
-    .nav-label {
-      font-size: 9px;
-      font-weight: 500;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      padding: 0 8px;
-      margin-bottom: 4px;
-    }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-      color: var(--text-muted);
-      transition: all 0.15s;
-      border: none;
-      background: none;
-      width: 100%;
-      text-align: left;
-    }
-
-    .nav-item:hover { background: var(--surface2); color: var(--text); }
-    .nav-item.active { background: rgba(0,212,170,0.1); color: var(--accent); }
-
-    .nav-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--text-muted);
-      flex-shrink: 0;
-    }
-    .nav-item.active .nav-dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-
-    .method-badge {
-      font-size: 9px;
-      font-weight: 600;
-      padding: 1px 5px;
-      border-radius: 3px;
-      margin-left: auto;
-    }
-    .get { background: rgba(79,156,249,0.15); color: var(--accent2); }
-    .post { background: rgba(0,212,170,0.15); color: var(--accent); }
-    .put { background: rgba(245,158,11,0.15); color: var(--warn); }
-    .delete { background: rgba(239,68,68,0.15); color: var(--error); }
-
-    /* TOKEN STATUS */
-    .token-status {
-      margin: auto 12px 0;
-      padding: 10px 12px;
-      background: var(--surface2);
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
-
-    .token-status-label {
-      font-size: 9px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 4px;
-    }
-
-    .token-status-value {
-      font-size: 10px;
-      color: var(--text-muted);
-      word-break: break-all;
-      line-height: 1.4;
-    }
-
-    .token-status-value.active {
-      color: var(--accent);
-    }
-
-    .status-dot {
-      display: inline-block;
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: var(--text-muted);
-      margin-right: 4px;
-    }
-    .status-dot.online { background: var(--accent); box-shadow: 0 0 4px var(--accent); }
-
-    /* MAIN CONTENT */
-    .main {
-      padding: 32px;
-      overflow-y: auto;
-    }
-
-    .section {
-      display: none;
-    }
-    .section.active {
-      display: block;
-      animation: fadeIn 0.2s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .section-header {
-      margin-bottom: 28px;
-    }
-
-    .section-header h2 {
-      font-family: 'Syne', sans-serif;
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--text);
-      letter-spacing: -0.02em;
-    }
-
-    .section-header p {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
-    }
-
-    .card-title {
-      font-family: 'Syne', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .endpoint-tag {
-      font-family: 'DM Mono', monospace;
-      font-size: 10px;
-      color: var(--text-muted);
-      background: var(--surface2);
-      padding: 2px 8px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      margin-left: auto;
-    }
-
-    .field {
-      margin-bottom: 12px;
-    }
-
-    .field label {
-      display: block;
-      font-size: 10px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 5px;
-    }
-
-    .field input, .field select {
-      width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 9px 12px;
-      font-family: 'DM Mono', monospace;
-      font-size: 12px;
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    .field input:focus, .field select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(0,212,170,0.1);
-    }
-
-    .field input::placeholder { color: var(--text-muted); }
-
-    .field select option { background: var(--surface2); }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 16px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      border-radius: 6px;
-      border: none;
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
-      letter-spacing: 0.02em;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #0a0e1a;
-    }
-    .btn-primary:hover { background: #00bfa0; transform: translateY(-1px); }
-
-    .btn-secondary {
-      background: rgba(79,156,249,0.15);
-      color: var(--accent2);
-      border: 1px solid rgba(79,156,249,0.2);
-    }
-    .btn-secondary:hover { background: rgba(79,156,249,0.25); }
-
-    .btn-warn {
-      background: rgba(245,158,11,0.15);
-      color: var(--warn);
-      border: 1px solid rgba(245,158,11,0.2);
-    }
-    .btn-warn:hover { background: rgba(245,158,11,0.25); }
-
-    .btn-danger {
-      background: rgba(239,68,68,0.15);
-      color: var(--error);
-      border: 1px solid rgba(239,68,68,0.2);
-    }
-    .btn-danger:hover { background: rgba(239,68,68,0.25); }
-
-    .btn-ghost {
-      background: transparent;
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-    }
-    .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
-
-    /* RESPONSE PANEL */
-    .response-panel {
-      background: var(--surface);
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      position: sticky;
-      top: 0;
-      height: 100vh;
-    }
-
-    .response-header {
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .response-header h3 {
-      font-family: 'Syne', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .response-status {
-      font-size: 10px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      display: none;
-    }
-
-    .response-status.ok { background: rgba(16,185,129,0.15); color: var(--success); display: block; }
-    .response-status.err { background: rgba(239,68,68,0.15); color: var(--error); display: block; }
-
-    .response-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 20px;
-    }
-
-    .response-pre {
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
-      color: #94a3b8;
-      line-height: 1.7;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .response-pre .key { color: var(--accent2); }
-    .response-pre .string { color: var(--accent); }
-    .response-pre .number { color: var(--warn); }
-    .response-pre .bool { color: var(--accent3); }
-    .response-pre .null { color: var(--error); }
-
-    .response-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: var(--text-muted);
-      font-size: 12px;
-      gap: 8px;
-    }
-
-    .response-empty-icon {
-      font-size: 32px;
-      opacity: 0.3;
-    }
-
-    .spinner {
-      width: 20px; height: 20px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      display: none;
-    }
-    .spinner.active { display: block; }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* BASE URL bar */
-    .base-url-bar {
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 32px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .base-url-bar span { color: var(--accent); font-size: 11px; }
-
-    #base-url-input {
-      background: transparent;
-      border: none;
-      outline: none;
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
-      color: var(--text);
-      flex: 1;
-    }
-
-    .divider {
-      height: 1px;
-      background: var(--border);
-      margin: 8px 0;
-    }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit:scrollbar-thumb { background: var(--border); border-radius: 2px; }
-  </style>
-</head>
-<body>
-
-<div class="layout">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="logo">
-      <div class="logo-icon">🏥</div>
-      <h1>Clinic API</h1>
-      <p>Test Console v1.0</p>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-label">Authentication</div>
-      <button class="nav-item active" onclick="showSection('register', this)">
-        <span class="nav-dot"></span> Register
-        <span class="method-badge post">POST</span>
-      </button>
-      <button class="nav-item" onclick="showSection('login', this)">
-        <span class="nav-dot"></span> Login
-        <span class="method-badge post">POST</span>
-      </button>
-      <button class="nav-item" onclick="showSection('me', this)">
-        <span class="nav-dot"></span> Me / Refresh / Logout
-        <span class="method-badge get">GET</span>
-      </button>
-    </div>
-
-    <div class="divider" style="margin: 8px 12px;"></div>
-
-    <div class="nav-section">
-      <div class="nav-label">Patients</div>
-      <button class="nav-item" onclick="showSection('patients-create', this)">
-        <span class="nav-dot"></span> Create Patient
-        <span class="method-badge post">POST</span>
-      </button>
-      <button class="nav-item" onclick="showSection('patients-list', this)">
-        <span class="nav-dot"></span> List Patients
-        <span class="method-badge get">GET</span>
-      </button>
-      <button class="nav-item" onclick="showSection('patients-id', this)">
-        <span class="nav-dot"></span> By ID
-        <span class="method-badge get">GET</span>
-      </button>
-    </div>
-
-    <div class="divider" style="margin: 8px 12px;"></div>
-
-    <div class="nav-section">
-      <div class="nav-label">Appointments</div>
-      <button class="nav-item" onclick="showSection('appt-create', this)">
-        <span class="nav-dot"></span> Create
-        <span class="method-badge post">POST</span>
-      </button>
-      <button class="nav-item" onclick="showSection('appt-list', this)">
-        <span class="nav-dot"></span> List
-        <span class="method-badge get">GET</span>
-      </button>
-      <button class="nav-item" onclick="showSection('appt-id', this)">
-        <span class="nav-dot"></span> By ID
-        <span class="method-badge get">GET</span>
-      </button>
-    </div>
-
-    <div class="divider" style="margin: 8px 12px;"></div>
-
-    <div class="nav-section">
-      <div class="nav-label">AI / RAG</div>
-      <button class="nav-item" onclick="showSection('ai-upload', this)">
-        <span class="nav-dot"></span> Upload PDF
-        <span class="method-badge post">POST</span>
-      </button>
-      <button class="nav-item" onclick="showSection('ai-chat', this)">
-        <span class="nav-dot"></span> Ask AI
-        <span class="method-badge post">POST</span>
-      </button>
-    </div>
-
-    <div class="token-status">
-      <div class="token-status-label"><span class="status-dot" id="status-dot"></span>Token</div>
-      <div class="token-status-value" id="token-display">Not authenticated</div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main">
-
-    <!-- Base URL bar -->
-    <div class="base-url-bar" style="margin: -32px -32px 28px; padding: 10px 32px;">
-      <span>BASE URL</span>
-      <input id="base-url-input" value="https://clinic-api-krh9.onrender.com" />
-      <button class="btn btn-ghost" style="padding: 4px 10px; font-size: 10px;" onclick="saveBase()">Save</button>
-    </div>
-
-    <!-- REGISTER -->
-    <div class="section active" id="section-register">
-      <div class="section-header">
-        <h2>Register</h2>
-        <p>Create a new user account</p>
-      </div>
-      <div class="card">
-        <div class="card-title">
-          New User
-          <span class="endpoint-tag">POST /api/auth/register</span>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clinic API</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0e1a;
+        --surface: #111827;
+        --surface2: #1a2235;
+        --border: #1e2d45;
+        --accent: #00d4aa;
+        --accent2: #4f9cf9;
+        --accent3: #f97316;
+        --text: #e2e8f0;
+        --text-muted: #64748b;
+        --success: #10b981;
+        --error: #ef4444;
+        --warn: #f59e0b;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "DM Mono", monospace;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Background grid */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(0, 212, 170, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 212, 170, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 240px 1fr 340px;
+        min-height: 100vh;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        padding: 24px 0;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .logo {
+        padding: 0 20px 24px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 16px;
+      }
+
+      .logo-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+        font-size: 16px;
+      }
+
+      .logo h1 {
+        font-family: "Syne", sans-serif;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .logo p {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .nav-section {
+        padding: 8px 12px 4px;
+      }
+
+      .nav-label {
+        font-size: 9px;
+        font-weight: 500;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        padding: 0 8px;
+        margin-bottom: 4px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--text-muted);
+        transition: all 0.15s;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+      }
+
+      .nav-item:hover {
+        background: var(--surface2);
+        color: var(--text);
+      }
+      .nav-item.active {
+        background: rgba(0, 212, 170, 0.1);
+        color: var(--accent);
+      }
+
+      .nav-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        flex-shrink: 0;
+      }
+      .nav-item.active .nav-dot {
+        background: var(--accent);
+        box-shadow: 0 0 6px var(--accent);
+      }
+
+      .method-badge {
+        font-size: 9px;
+        font-weight: 600;
+        padding: 1px 5px;
+        border-radius: 3px;
+        margin-left: auto;
+      }
+      .get {
+        background: rgba(79, 156, 249, 0.15);
+        color: var(--accent2);
+      }
+      .post {
+        background: rgba(0, 212, 170, 0.15);
+        color: var(--accent);
+      }
+      .put {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+      }
+      .delete {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--error);
+      }
+
+      /* TOKEN STATUS */
+      .token-status {
+        margin: auto 12px 0;
+        padding: 10px 12px;
+        background: var(--surface2);
+        border-radius: 8px;
+        border: 1px solid var(--border);
+      }
+
+      .token-status-label {
+        font-size: 9px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 4px;
+      }
+
+      .token-status-value {
+        font-size: 10px;
+        color: var(--text-muted);
+        word-break: break-all;
+        line-height: 1.4;
+      }
+
+      .token-status-value.active {
+        color: var(--accent);
+      }
+
+      .status-dot {
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        margin-right: 4px;
+      }
+      .status-dot.online {
+        background: var(--accent);
+        box-shadow: 0 0 4px var(--accent);
+      }
+
+      /* MAIN CONTENT */
+      .main {
+        padding: 32px;
+        overflow-y: auto;
+      }
+
+      .section {
+        display: none;
+      }
+      .section.active {
+        display: block;
+        animation: fadeIn 0.2s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .section-header {
+        margin-bottom: 28px;
+      }
+
+      .section-header h2 {
+        font-family: "Syne", sans-serif;
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: -0.02em;
+      }
+
+      .section-header p {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+
+      .card-title {
+        font-family: "Syne", sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .endpoint-tag {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        color: var(--text-muted);
+        background: var(--surface2);
+        padding: 2px 8px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        margin-left: auto;
+      }
+
+      .field {
+        margin-bottom: 12px;
+      }
+
+      .field label {
+        display: block;
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 5px;
+      }
+
+      .field input,
+      .field select {
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 9px 12px;
+        font-family: "DM Mono", monospace;
+        font-size: 12px;
+        color: var(--text);
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      .field input:focus,
+      .field select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.1);
+      }
+
+      .field input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .field select option {
+        background: var(--surface2);
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 6px;
+        border: none;
+        font-family: "DM Mono", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        letter-spacing: 0.02em;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: #0a0e1a;
+      }
+      .btn-primary:hover {
+        background: #00bfa0;
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        background: rgba(79, 156, 249, 0.15);
+        color: var(--accent2);
+        border: 1px solid rgba(79, 156, 249, 0.2);
+      }
+      .btn-secondary:hover {
+        background: rgba(79, 156, 249, 0.25);
+      }
+
+      .btn-warn {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+      }
+      .btn-warn:hover {
+        background: rgba(245, 158, 11, 0.25);
+      }
+
+      .btn-danger {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--error);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+      }
+      .btn-danger:hover {
+        background: rgba(239, 68, 68, 0.25);
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+      }
+      .btn-ghost:hover {
+        color: var(--text);
+        border-color: var(--text-muted);
+      }
+
+      /* RESPONSE PANEL */
+      .response-panel {
+        background: var(--surface);
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+      }
+
+      .response-header {
+        padding: 20px 20px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .response-header h3 {
+        font-family: "Syne", sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .response-status {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: none;
+      }
+
+      .response-status.ok {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--success);
+        display: block;
+      }
+      .response-status.err {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--error);
+        display: block;
+      }
+
+      .response-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 20px;
+      }
+
+      .response-pre {
+        font-family: "DM Mono", monospace;
+        font-size: 11px;
+        color: #94a3b8;
+        line-height: 1.7;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .response-pre .key {
+        color: var(--accent2);
+      }
+      .response-pre .string {
+        color: var(--accent);
+      }
+      .response-pre .number {
+        color: var(--warn);
+      }
+      .response-pre .bool {
+        color: var(--accent3);
+      }
+      .response-pre .null {
+        color: var(--error);
+      }
+
+      .response-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--text-muted);
+        font-size: 12px;
+        gap: 8px;
+      }
+
+      .response-empty-icon {
+        font-size: 32px;
+        opacity: 0.3;
+      }
+
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        display: none;
+      }
+      .spinner.active {
+        display: block;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* BASE URL bar */
+      .base-url-bar {
+        background: var(--surface2);
+        border-bottom: 1px solid var(--border);
+        padding: 10px 32px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      .base-url-bar span {
+        color: var(--accent);
+        font-size: 11px;
+      }
+
+      #base-url-input {
+        background: transparent;
+        border: none;
+        outline: none;
+        font-family: "DM Mono", monospace;
+        font-size: 11px;
+        color: var(--text);
+        flex: 1;
+      }
+
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 8px 0;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit:scrollbar-thumb {
+        background: var(--border);
+        border-radius: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">🏥</div>
+          <h1>Clinic API</h1>
+          <p>Test Console v1.0</p>
         </div>
-        <div class="grid-2">
-          <div class="field">
-            <label>Name</label>
-            <input id="r-name" placeholder="John Doe" />
+
+        <div class="nav-section">
+          <div class="nav-label">Authentication</div>
+          <button
+            class="nav-item active"
+            onclick="showSection('register', this)"
+          >
+            <span class="nav-dot"></span> Register
+            <span class="method-badge post">POST</span>
+          </button>
+          <button class="nav-item" onclick="showSection('login', this)">
+            <span class="nav-dot"></span> Login
+            <span class="method-badge post">POST</span>
+          </button>
+          <button class="nav-item" onclick="showSection('me', this)">
+            <span class="nav-dot"></span> Me / Refresh / Logout
+            <span class="method-badge get">GET</span>
+          </button>
+        </div>
+
+        <div class="divider" style="margin: 8px 12px"></div>
+
+        <div class="nav-section">
+          <div class="nav-label">Patients</div>
+          <button
+            class="nav-item"
+            onclick="showSection('patients-create', this)"
+          >
+            <span class="nav-dot"></span> Create Patient
+            <span class="method-badge post">POST</span>
+          </button>
+          <button class="nav-item" onclick="showSection('patients-list', this)">
+            <span class="nav-dot"></span> List Patients
+            <span class="method-badge get">GET</span>
+          </button>
+          <button class="nav-item" onclick="showSection('patients-id', this)">
+            <span class="nav-dot"></span> By ID
+            <span class="method-badge get">GET</span>
+          </button>
+        </div>
+
+        <div class="divider" style="margin: 8px 12px"></div>
+
+        <div class="nav-section">
+          <div class="nav-label">Appointments</div>
+          <button class="nav-item" onclick="showSection('appt-create', this)">
+            <span class="nav-dot"></span> Create
+            <span class="method-badge post">POST</span>
+          </button>
+          <button class="nav-item" onclick="showSection('appt-list', this)">
+            <span class="nav-dot"></span> List
+            <span class="method-badge get">GET</span>
+          </button>
+          <button class="nav-item" onclick="showSection('appt-id', this)">
+            <span class="nav-dot"></span> By ID
+            <span class="method-badge get">GET</span>
+          </button>
+        </div>
+
+        <div class="divider" style="margin: 8px 12px"></div>
+
+        <div class="nav-section">
+          <div class="nav-label">AI / RAG</div>
+          <button class="nav-item" onclick="showSection('ai-upload', this)">
+            <span class="nav-dot"></span> Upload PDF
+            <span class="method-badge post">POST</span>
+          </button>
+          <button class="nav-item" onclick="showSection('ai-chat', this)">
+            <span class="nav-dot"></span> Ask AI
+            <span class="method-badge post">POST</span>
+          </button>
+        </div>
+
+        <div class="token-status">
+          <div class="token-status-label">
+            <span class="status-dot" id="status-dot"></span>Token
           </div>
-          <div class="field">
-            <label>Email</label>
-            <input id="r-email" placeholder="john@email.com" />
-          </div>
-        </div>
-        <div class="grid-2">
-          <div class="field">
-            <label>Password</label>
-            <input id="r-password" type="password" placeholder="min 6 chars" />
-          </div>
-          <div class="field">
-            <label>Role</label>
-            <select id="r-role">
-              <option value="RECEPTIONIST">RECEPTIONIST</option>
-              <option value="DOCTOR">DOCTOR</option>
-            </select>
-          </div>
-        </div>
-        <div class="actions">
-          <button class="btn btn-primary" onclick="register()">▶ Send Request</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- LOGIN -->
-    <div class="section" id="section-login">
-      <div class="section-header">
-        <h2>Login</h2>
-        <p>Authenticate and receive tokens</p>
-      </div>
-      <div class="card">
-        <div class="card-title">
-          Credentials
-          <span class="endpoint-tag">POST /api/auth/login</span>
-        </div>
-        <div class="field">
-          <label>Email</label>
-          <input id="l-email" placeholder="john@email.com" />
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <input id="l-password" type="password" />
-        </div>
-        <div class="actions">
-          <button class="btn btn-primary" onclick="login()">▶ Login</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ME / REFRESH / LOGOUT -->
-    <div class="section" id="section-me">
-      <div class="section-header">
-        <h2>Session</h2>
-        <p>Manage your current session</p>
-      </div>
-      <div class="card">
-        <div class="card-title">Session Actions</div>
-        <div class="actions">
-          <button class="btn btn-secondary" onclick="getMe()">GET /api/auth/me</button>
-          <button class="btn btn-warn" onclick="refresh()">↺ Refresh Token</button>
-          <button class="btn btn-danger" onclick="logout()">✕ Logout</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- PATIENTS CREATE -->
-    <div class="section" id="section-patients-create">
-      <div class="section-header">
-        <h2>Create Patient</h2>
-        <p>Requires RECEPTIONIST role</p>
-      </div>
-      <div class="card">
-        <div class="card-title">
-          Patient Data
-          <span class="endpoint-tag">POST /api/patients</span>
-        </div>
-        <div class="grid-2">
-          <div class="field">
-            <label>Name</label>
-            <input id="p-name" />
-          </div>
-          <div class="field">
-            <label>Email</label>
-            <input id="p-email" placeholder="john@email.com" />
+          <div class="token-status-value" id="token-display">
+            Not authenticated
           </div>
         </div>
-        <div class="grid-2">
-          <div class="field">
-            <label>Phone</label>
-            <input id="p-phone" />
-          </div>
-          <div class="field">
-            <label>Notes</label>
-            <input id="p-notes" />
-          </div>
-        </div>
-        <div class="grid-2">
-          <div class="field">
-            <label>Gender</label>
-            <select id="p-gender">
-              <option value="MALE">MALE</option>
-              <option value="FEMALE">FEMALE</option>
-            </select>
-          </div>
-        </div>
-        <div class="actions">
-          <button class="btn btn-primary" onclick="createPatient()">▶ Create</button>
-        </div>
-      </div>
-    </div>
+      </aside>
 
-    <!-- PATIENTS LIST -->
-    <div class="section" id="section-patients-list">
-      <div class="section-header">
-        <h2>List Patients</h2>
-        <p>Requires RECEPTIONIST role</p>
-      </div>
-      <div class="card">
-        <div class="card-title">
-          All Patients
-          <span class="endpoint-tag">GET /api/patients</span>
+      <!-- MAIN -->
+      <main class="main">
+        <!-- Base URL bar -->
+        <div
+          class="base-url-bar"
+          style="margin: -32px -32px 28px; padding: 10px 32px"
+        >
+          <span>BASE URL</span>
+          <input
+            id="base-url-input"
+            value="https://clinic-api-krh9.onrender.com"
+          />
+          <button
+            class="btn btn-ghost"
+            style="padding: 4px 10px; font-size: 10px"
+            onclick="saveBase()"
+          >
+            Save
+          </button>
         </div>
-        <div class="actions">
-          <button class="btn btn-secondary" onclick="getPatients()">▶ Fetch All</button>
-        </div>
-      </div>
-    </div>
 
-    <!-- PATIENTS BY ID -->
-    <div class="section" id="section-patients-id">
-      <div class="section-header">
-        <h2>Patient by ID</h2>
-        <p>Get, update or delete a specific patient</p>
-      </div>
-      <div class="card">
-        <div class="card-title">Patient ID</div>
-        <div class="field">
-          <label>UUID</label>
-          <input id="p-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-        </div>
-        <div class="divider"></div>
-        <div class="card-title" style="margin-top: 12px;">Update Data <span style="font-size:10px;color:var(--text-muted)">(optional for PUT)</span></div>
-        <div class="grid-2">
-          <div class="field"><label>Name</label><input id="p-name-id" /></div>
-          <div class="field"><label>Phone</label><input id="p-phone-id" /></div>
-        </div>
-        <div class="grid-2">
-          <div class="field"><label>Notes</label><input id="p-notes-id" /></div>
-          <div class="field">
-            <label>Gender</label>
-            <select id="p-gender-id">
-              <option value="MALE">MALE</option>
-              <option value="FEMALE">FEMALE</option>
-            </select>
+        <!-- REGISTER -->
+        <div class="section active" id="section-register">
+          <div class="section-header">
+            <h2>Register</h2>
+            <p>Create a new user account</p>
+          </div>
+          <div class="card">
+            <div class="card-title">
+              New User
+              <span class="endpoint-tag">POST /api/auth/register</span>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Name</label>
+                <input id="r-name" placeholder="John Doe" />
+              </div>
+              <div class="field">
+                <label>Email</label>
+                <input id="r-email" placeholder="john@email.com" />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Password</label>
+                <input
+                  id="r-password"
+                  type="password"
+                  placeholder="min 6 chars"
+                />
+              </div>
+              <div class="field">
+                <label>Role</label>
+                <select id="r-role">
+                  <option value="RECEPTIONIST">RECEPTIONIST</option>
+                  <option value="DOCTOR">DOCTOR</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="register()">
+                ▶ Send Request
+              </button>
+            </div>
           </div>
         </div>
-        <div class="actions">
-          <button class="btn btn-secondary" onclick="getPatient()">GET</button>
-          <button class="btn btn-warn" onclick="updatePatient()">PUT</button>
-          <button class="btn btn-danger" onclick="deletePatient()">DELETE</button>
-        </div>
-      </div>
-    </div>
 
-    <!-- APPOINTMENTS CREATE -->
-    <div class="section" id="section-appt-create">
-      <div class="section-header">
-        <h2>Create Appointment</h2>
-        <p>Requires DOCTOR role</p>
-      </div>
-      <div class="card">
-        <div class="card-title">
-          Appointment Data
-          <span class="endpoint-tag">POST /api/appointments</span>
-        </div>
-        <div class="grid-2">
-          <div class="field">
-            <label>Patient Name</label>
-            <input id="a-patient-name" />
+        <!-- LOGIN -->
+        <div class="section" id="section-login">
+          <div class="section-header">
+            <h2>Login</h2>
+            <p>Authenticate and receive tokens</p>
           </div>
-          <div class="field">
-            <label>Doctor Name</label>
-            <input id="a-doctor-name" />
+          <div class="card">
+            <div class="card-title">
+              Credentials
+              <span class="endpoint-tag">POST /api/auth/login</span>
+            </div>
+            <div class="field">
+              <label>Email</label>
+              <input id="l-email" placeholder="john@email.com" />
+            </div>
+            <div class="field">
+              <label>Password</label>
+              <input id="l-password" type="password" />
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="login()">▶ Login</button>
+            </div>
           </div>
         </div>
-        <div class="grid-2">
-          <div class="field">
-            <label>Date (MM/DD/YYYY)</label>
-            <input id="a-date" placeholder="02/10/2026" />
-          </div>
-          <div class="field">
-            <label>Status</label>
-            <select id="a-status">
-              <option value="SCHEDULED">SCHEDULED</option>
-              <option value="CONFIRMED">CONFIRMED</option>
-              <option value="MISSED">MISSED</option>
-              <option value="REALIZED">REALIZED</option>
-              <option value="CANCELLED">CANCELLED</option>
-            </select>
-          </div>
-        </div>
-        <div class="actions">
-          <button class="btn btn-primary" onclick="createAppointment()">▶ Create</button>
-        </div>
-      </div>
-    </div>
 
-    <!-- APPOINTMENTS LIST -->
-    <div class="section" id="section-appt-list">
-      <div class="section-header">
-        <h2>List Appointments</h2>
-        <p>Requires RECEPTIONIST role</p>
-      </div>
-      <div class="card">
-        <div class="card-title">
-          All Appointments
-          <span class="endpoint-tag">GET /api/appointments</span>
-        </div>
-        <div class="actions">
-          <button class="btn btn-secondary" onclick="getAppointments()">▶ Fetch All</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- APPOINTMENTS BY ID -->
-    <div class="section" id="section-appt-id">
-      <div class="section-header">
-        <h2>Appointment by ID</h2>
-        <p>Get, update or delete a specific appointment</p>
-      </div>
-      <div class="card">
-        <div class="card-title">Appointment ID</div>
-        <div class="field">
-          <label>UUID</label>
-          <input id="a-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-        </div>
-        <div class="divider"></div>
-        <div class="card-title" style="margin-top: 12px;">Update Data <span style="font-size:10px;color:var(--text-muted)">(optional for PUT)</span></div>
-        <div class="grid-2">
-          <div class="field"><label>Patient Name</label><input id="a-patient-name-id" /></div>
-          <div class="field"><label>Doctor Name</label><input id="a-doctor-name-id" /></div>
-        </div>
-        <div class="grid-2">
-          <div class="field"><label>Date</label><input id="a-date-id" placeholder="02/10/2026" /></div>
-          <div class="field">
-            <label>Status</label>
-            <select id="a-status-id">
-              <option value="SCHEDULED">SCHEDULED</option>
-              <option value="CONFIRMED">CONFIRMED</option>
-              <option value="MISSED">MISSED</option>
-              <option value="REALIZED">REALIZED</option>
-              <option value="CANCELLED">CANCELLED</option>
-            </select>
+        <!-- ME / REFRESH / LOGOUT -->
+        <div class="section" id="section-me">
+          <div class="section-header">
+            <h2>Session</h2>
+            <p>Manage your current session</p>
+          </div>
+          <div class="card">
+            <div class="card-title">Session Actions</div>
+            <div class="actions">
+              <button class="btn btn-secondary" onclick="getMe()">
+                GET /api/auth/me
+              </button>
+              <button class="btn btn-warn" onclick="refresh()">
+                ↺ Refresh Token
+              </button>
+              <button class="btn btn-danger" onclick="logout()">
+                ✕ Logout
+              </button>
+            </div>
           </div>
         </div>
-        <div class="actions">
-          <button class="btn btn-secondary" onclick="getAppointment()">GET</button>
-          <button class="btn btn-warn" onclick="updateAppointment()">PUT</button>
-          <button class="btn btn-danger" onclick="deleteAppointment()">DELETE</button>
+
+        <!-- PATIENTS CREATE -->
+        <div class="section" id="section-patients-create">
+          <div class="section-header">
+            <h2>Create Patient</h2>
+            <p>Requires RECEPTIONIST role</p>
+          </div>
+          <div class="card">
+            <div class="card-title">
+              Patient Data
+              <span class="endpoint-tag">POST /api/patients</span>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Name</label>
+                <input id="p-name" />
+              </div>
+              <div class="field">
+                <label>Email</label>
+                <input id="p-email" placeholder="john@email.com" />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Phone</label>
+                <input id="p-phone" />
+              </div>
+              <div class="field">
+                <label>Notes</label>
+                <input id="p-notes" />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Gender</label>
+                <select id="p-gender">
+                  <option value="MALE">MALE</option>
+                  <option value="FEMALE">FEMALE</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="createPatient()">
+                ▶ Create
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <!-- PATIENTS LIST -->
+        <div class="section" id="section-patients-list">
+          <div class="section-header">
+            <h2>List Patients</h2>
+            <p>Requires RECEPTIONIST role</p>
+          </div>
+          <div class="card">
+            <div class="card-title">
+              All Patients
+              <span class="endpoint-tag">GET /api/patients</span>
+            </div>
+            <div class="actions">
+              <button class="btn btn-secondary" onclick="getPatients()">
+                ▶ Fetch All
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PATIENTS BY ID -->
+        <div class="section" id="section-patients-id">
+          <div class="section-header">
+            <h2>Patient by ID</h2>
+            <p>Get, update or delete a specific patient</p>
+          </div>
+          <div class="card">
+            <div class="card-title">Patient ID</div>
+            <div class="field">
+              <label>UUID</label>
+              <input
+                id="p-id"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              />
+            </div>
+            <div class="divider"></div>
+            <div class="card-title" style="margin-top: 12px">
+              Update Data
+              <span style="font-size: 10px; color: var(--text-muted)"
+                >(optional for PUT)</span
+              >
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Name</label><input id="p-name-id" />
+              </div>
+              <div class="field">
+                <label>Phone</label><input id="p-phone-id" />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Notes</label><input id="p-notes-id" />
+              </div>
+              <div class="field">
+                <label>Gender</label>
+                <select id="p-gender-id">
+                  <option value="MALE">MALE</option>
+                  <option value="FEMALE">FEMALE</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-secondary" onclick="getPatient()">
+                GET
+              </button>
+              <button class="btn btn-warn" onclick="updatePatient()">
+                PUT
+              </button>
+              <button class="btn btn-danger" onclick="deletePatient()">
+                DELETE
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- APPOINTMENTS CREATE -->
+        <div class="section" id="section-appt-create">
+          <div class="section-header">
+            <h2>Create Appointment</h2>
+            <p>Requires DOCTOR role</p>
+          </div>
+          <div class="card">
+            <div class="card-title">
+              Appointment Data
+              <span class="endpoint-tag">POST /api/appointments</span>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Patient Name</label>
+                <input id="a-patient-name" />
+              </div>
+              <div class="field">
+                <label>Doctor Name</label>
+                <input id="a-doctor-name" />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Date (MM/DD/YYYY)</label>
+                <input id="a-date" placeholder="02/10/2026" />
+              </div>
+              <div class="field">
+                <label>Status</label>
+                <select id="a-status">
+                  <option value="SCHEDULED">SCHEDULED</option>
+                  <option value="CONFIRMED">CONFIRMED</option>
+                  <option value="MISSED">MISSED</option>
+                  <option value="REALIZED">REALIZED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="createAppointment()">
+                ▶ Create
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- APPOINTMENTS LIST -->
+        <div class="section" id="section-appt-list">
+          <div class="section-header">
+            <h2>List Appointments</h2>
+            <p>Requires RECEPTIONIST role</p>
+          </div>
+          <div class="card">
+            <div class="card-title">
+              All Appointments
+              <span class="endpoint-tag">GET /api/appointments</span>
+            </div>
+            <div class="actions">
+              <button class="btn btn-secondary" onclick="getAppointments()">
+                ▶ Fetch All
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- APPOINTMENTS BY ID -->
+        <div class="section" id="section-appt-id">
+          <div class="section-header">
+            <h2>Appointment by ID</h2>
+            <p>Get, update or delete a specific appointment</p>
+          </div>
+          <div class="card">
+            <div class="card-title">Appointment ID</div>
+            <div class="field">
+              <label>UUID</label>
+              <input
+                id="a-id"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              />
+            </div>
+            <div class="divider"></div>
+            <div class="card-title" style="margin-top: 12px">
+              Update Data
+              <span style="font-size: 10px; color: var(--text-muted)"
+                >(optional for PUT)</span
+              >
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Patient Name</label><input id="a-patient-name-id" />
+              </div>
+              <div class="field">
+                <label>Doctor Name</label><input id="a-doctor-name-id" />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Date</label
+                ><input id="a-date-id" placeholder="02/10/2026" />
+              </div>
+              <div class="field">
+                <label>Status</label>
+                <select id="a-status-id">
+                  <option value="SCHEDULED">SCHEDULED</option>
+                  <option value="CONFIRMED">CONFIRMED</option>
+                  <option value="MISSED">MISSED</option>
+                  <option value="REALIZED">REALIZED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-secondary" onclick="getAppointment()">
+                GET
+              </button>
+              <button class="btn btn-warn" onclick="updateAppointment()">
+                PUT
+              </button>
+              <button class="btn btn-danger" onclick="deleteAppointment()">
+                DELETE
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI UPLOAD -->
+        <div class="section" id="section-ai-upload">
+          <div class="section-header">
+            <h2>Upload PDF</h2>
+            <p>Upload a PDF to build the RAG knowledge base</p>
+          </div>
+          <div class="card">
+            <div class="card-title">
+              PDF File
+              <span class="endpoint-tag">POST /api/upload</span>
+            </div>
+            <div class="field">
+              <label>Select PDF</label>
+              <input
+                type="file"
+                id="ai-pdf"
+                accept=".pdf"
+                style="padding: 6px"
+              />
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="uploadPdf()">
+                &#9650; Upload
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI CHAT -->
+        <div class="section" id="section-ai-chat">
+          <div class="section-header">
+            <h2>Ask AI</h2>
+            <p>Ask questions about the uploaded PDF</p>
+          </div>
+          <div class="card">
+            <div class="card-title">
+              Question
+              <span class="endpoint-tag">POST /api/ask</span>
+            </div>
+            <div class="field">
+              <label>Your question</label>
+              <input
+                id="ai-question"
+                placeholder="What does the document say about..."
+              />
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="askAi()">
+                &#9654; Ask
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- RESPONSE PANEL -->
+      <aside class="response-panel">
+        <div class="response-header">
+          <h3>Response</h3>
+          <div class="spinner" id="spinner"></div>
+          <div class="response-status" id="response-status"></div>
+        </div>
+        <div class="response-body" id="response-body">
+          <div class="response-empty">
+            <div class="response-empty-icon">⚡</div>
+            <span>Send a request to see the response</span>
+          </div>
+        </div>
+      </aside>
     </div>
 
+    <script>
+      let BASE = localStorage.getItem("baseUrl") || "http://localhost:3000";
+      document.getElementById("base-url-input").value = BASE;
 
-    <!-- AI UPLOAD -->
-    <div class="section" id="section-ai-upload">
-      <div class="section-header">
-        <h2>Upload PDF</h2>
-        <p>Upload a PDF to build the RAG knowledge base</p>
-      </div>
-      <div class="card">
-        <div class="card-title">
-          PDF File
-          <span class="endpoint-tag">POST /api/upload</span>
-        </div>
-        <div class="field">
-          <label>Select PDF</label>
-          <input type="file" id="ai-pdf" accept=".pdf" style="padding: 6px;" />
-        </div>
-        <div class="actions">
-          <button class="btn btn-primary" onclick="uploadPdf()">&#9650; Upload</button>
-        </div>
-      </div>
-    </div>
+      let accessToken = localStorage.getItem("accessToken") || "";
+      let refreshToken = localStorage.getItem("refreshToken") || "";
 
-    <!-- AI CHAT -->
-    <div class="section" id="section-ai-chat">
-      <div class="section-header">
-        <h2>Ask AI</h2>
-        <p>Ask questions about the uploaded PDF</p>
-      </div>
-      <div class="card">
-        <div class="card-title">
-          Question
-          <span class="endpoint-tag">POST /api/ask</span>
-        </div>
-        <div class="field">
-          <label>Your question</label>
-          <input id="ai-question" placeholder="What does the document say about..." />
-        </div>
-        <div class="actions">
-          <button class="btn btn-primary" onclick="askAi()">&#9654; Ask</button>
-        </div>
-      </div>
-    </div>
-  </main>
+      updateTokenDisplay();
 
-  <!-- RESPONSE PANEL -->
-  <aside class="response-panel">
-    <div class="response-header">
-      <h3>Response</h3>
-      <div class="spinner" id="spinner"></div>
-      <div class="response-status" id="response-status"></div>
-    </div>
-    <div class="response-body" id="response-body">
-      <div class="response-empty">
-        <div class="response-empty-icon">⚡</div>
-        <span>Send a request to see the response</span>
-      </div>
-    </div>
-  </aside>
+      function saveBase() {
+        BASE = document
+          .getElementById("base-url-input")
+          .value.trim()
+          .replace(/\/$/, "");
+        localStorage.setItem("baseUrl", BASE);
+        showStatus("Base URL saved", "ok");
+      }
 
-</div>
+      function updateTokenDisplay() {
+        const el = document.getElementById("token-display");
+        const dot = document.getElementById("status-dot");
+        if (accessToken) {
+          el.className = "token-status-value active";
+          el.textContent = accessToken.substring(0, 40) + "...";
+          dot.className = "status-dot online";
+        } else {
+          el.className = "token-status-value";
+          el.textContent = "Not authenticated";
+          dot.className = "status-dot";
+        }
+      }
 
-<script>
-  let BASE = localStorage.getItem('baseUrl') || 'https://clinic-api-krh9.onrender.com';
-  document.getElementById('base-url-input').value = BASE;
+      function showSection(id, btn) {
+        document
+          .querySelectorAll(".section")
+          .forEach((s) => s.classList.remove("active"));
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById("section-" + id).classList.add("active");
+        btn.classList.add("active");
+      }
 
-  let accessToken = localStorage.getItem('accessToken') || '';
-  let refreshToken = localStorage.getItem('refreshToken') || '';
+      function syntaxHighlight(json) {
+        if (typeof json !== "string") json = JSON.stringify(json, null, 2);
+        return json.replace(
+          /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+          (match) => {
+            let cls = "number";
+            if (/^"/.test(match)) cls = /:$/.test(match) ? "key" : "string";
+            else if (/true|false/.test(match)) cls = "bool";
+            else if (/null/.test(match)) cls = "null";
+            return `<span class="${cls}">${match}</span>`;
+          },
+        );
+      }
 
-  updateTokenDisplay();
+      function showStatus(text, type) {
+        const el = document.getElementById("response-status");
+        el.textContent = text;
+        el.className = "response-status " + type;
+      }
 
-  function saveBase() {
-    BASE = document.getElementById('base-url-input').value.trim().replace(/\/$/, '');
-    localStorage.setItem('baseUrl', BASE);
-    showStatus('Base URL saved', 'ok');
-  }
+      function show(data, isError = false) {
+        const body = document.getElementById("response-body");
+        const spinner = document.getElementById("spinner");
+        spinner.classList.remove("active");
 
-  function updateTokenDisplay() {
-    const el = document.getElementById('token-display');
-    const dot = document.getElementById('status-dot');
-    if (accessToken) {
-      el.className = 'token-status-value active';
-      el.textContent = accessToken.substring(0, 40) + '...';
-      dot.className = 'status-dot online';
-    } else {
-      el.className = 'token-status-value';
-      el.textContent = 'Not authenticated';
-      dot.className = 'status-dot';
-    }
-  }
+        let text =
+          typeof data === "string" ? data : JSON.stringify(data, null, 2);
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          parsed = null;
+        }
 
-  function showSection(id, btn) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-    document.getElementById('section-' + id).classList.add('active');
-    btn.classList.add('active');
-  }
+        if (parsed) {
+          body.innerHTML = `<pre class="response-pre">${syntaxHighlight(parsed)}</pre>`;
+          showStatus(isError ? "✕ Error" : "✓ OK", isError ? "err" : "ok");
+        } else {
+          body.innerHTML = `<pre class="response-pre">${text}</pre>`;
+          showStatus(isError ? "✕ Error" : "✓ OK", isError ? "err" : "ok");
+        }
+      }
 
-  function syntaxHighlight(json) {
-    if (typeof json !== 'string') json = JSON.stringify(json, null, 2);
-    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
-      let cls = 'number';
-      if (/^"/.test(match)) cls = /:$/.test(match) ? 'key' : 'string';
-      else if (/true|false/.test(match)) cls = 'bool';
-      else if (/null/.test(match)) cls = 'null';
-      return `<span class="${cls}">${match}</span>`;
-    });
-  }
+      function loading() {
+        document.getElementById("spinner").classList.add("active");
+        document.getElementById("response-status").className =
+          "response-status";
+        document.getElementById("response-body").innerHTML =
+          '<div class="response-empty"><div class="response-empty-icon">⏳</div><span>Waiting for response...</span></div>';
+      }
 
-  function showStatus(text, type) {
-    const el = document.getElementById('response-status');
-    el.textContent = text;
-    el.className = 'response-status ' + type;
-  }
+      async function api(path, method = "GET", body) {
+        loading();
+        try {
+          const res = await fetch(`${BASE}${path}`, {
+            method,
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: body ? JSON.stringify(body) : undefined,
+          });
+          const text = await res.text();
+          try {
+            show(JSON.parse(text), !res.ok);
+          } catch {
+            show(text, !res.ok);
+          }
+        } catch (err) {
+          show("Error: " + err.message, true);
+        }
+      }
 
-  function show(data, isError = false) {
-    const body = document.getElementById('response-body');
-    const spinner = document.getElementById('spinner');
-    spinner.classList.remove('active');
+      async function register() {
+        await api("/api/auth/register", "POST", {
+          name: document.getElementById("r-name").value,
+          email: document.getElementById("r-email").value,
+          password: document.getElementById("r-password").value,
+          role: document.getElementById("r-role").value,
+        });
+      }
 
-    let text = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
-    let parsed;
-    try { parsed = JSON.parse(text); } catch { parsed = null; }
+      async function login() {
+        loading();
+        try {
+          const res = await fetch(`${BASE}/api/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: document.getElementById("l-email").value,
+              password: document.getElementById("l-password").value,
+            }),
+          });
+          const data = await res.json();
+          show(data, !res.ok);
+          if (data.accessToken) {
+            accessToken = data.accessToken;
+            refreshToken = data.refreshToken || "";
+            localStorage.setItem("accessToken", accessToken);
+            localStorage.setItem("refreshToken", refreshToken);
+            updateTokenDisplay();
+          }
+        } catch (err) {
+          show("Error: " + err.message, true);
+        }
+      }
 
-    if (parsed) {
-      body.innerHTML = `<pre class="response-pre">${syntaxHighlight(parsed)}</pre>`;
-      showStatus(isError ? '✕ Error' : '✓ OK', isError ? 'err' : 'ok');
-    } else {
-      body.innerHTML = `<pre class="response-pre">${text}</pre>`;
-      showStatus(isError ? '✕ Error' : '✓ OK', isError ? 'err' : 'ok');
-    }
-  }
-
-  function loading() {
-    document.getElementById('spinner').classList.add('active');
-    document.getElementById('response-status').className = 'response-status';
-    document.getElementById('response-body').innerHTML = '<div class="response-empty"><div class="response-empty-icon">⏳</div><span>Waiting for response...</span></div>';
-  }
-
-  async function api(path, method = 'GET', body) {
-    loading();
-    try {
-      const res = await fetch(`${BASE}${path}`, {
-        method,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: body ? JSON.stringify(body) : undefined,
-      });
-      const text = await res.text();
-      try { show(JSON.parse(text), !res.ok); } catch { show(text, !res.ok); }
-    } catch (err) {
-      show('Error: ' + err.message, true);
-    }
-  }
-
-  async function register() {
-    await api('/api/auth/register', 'POST', {
-      name: document.getElementById('r-name').value,
-      email: document.getElementById('r-email').value,
-      password: document.getElementById('r-password').value,
-      role: document.getElementById('r-role').value,
-    });
-  }
-
-  async function login() {
-    loading();
-    try {
-      const res = await fetch(`${BASE}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: document.getElementById('l-email').value,
-          password: document.getElementById('l-password').value,
-        }),
-      });
-      const data = await res.json();
-      show(data, !res.ok);
-      if (data.accessToken) {
-        accessToken = data.accessToken;
-        refreshToken = data.refreshToken || '';
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
+      function getMe() {
+        api("/api/auth/me");
+      }
+      function refresh() {
+        api("/api/auth/refresh", "POST", { refreshToken });
+      }
+      async function logout() {
+        await api("/api/auth/logout", "POST", { refreshToken });
+        accessToken = "";
+        refreshToken = "";
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
         updateTokenDisplay();
       }
-    } catch (err) { show('Error: ' + err.message, true); }
-  }
 
-  function getMe() { api('/api/auth/me'); }
-  function refresh() { api('/api/auth/refresh', 'POST', { refreshToken }); }
-  async function logout() {
-    await api('/api/auth/logout', 'POST', { refreshToken });
-    accessToken = ''; refreshToken = '';
-    localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken');
-    updateTokenDisplay();
-  }
+      function createPatient() {
+        api(`/api/patients`, "POST", {
+          name: document.getElementById("p-name").value,
+          email: document.getElementById("p-email").value,
+          phone: document.getElementById("p-phone").value,
+          notes: document.getElementById("p-notes").value,
+          gender: document.getElementById("p-gender").value,
+        });
+      }
+      function getPatients() {
+        api("/api/patients");
+      }
+      function getPatient() {
+        api(`/api/patients/${document.getElementById("p-id").value}`);
+      }
+      function deletePatient() {
+        api(`/api/patients/${document.getElementById("p-id").value}`, "DELETE");
+      }
+      function updatePatient() {
+        api(`/api/patients/${document.getElementById("p-id").value}`, "PUT", {
+          name: document.getElementById("p-name-id").value,
+          phone: document.getElementById("p-phone-id").value,
+          notes: document.getElementById("p-notes-id").value,
+          gender: document.getElementById("p-gender-id").value,
+        });
+      }
 
-  function createPatient() {
-    api(`/api/patients`, 'POST', {
-      name: document.getElementById('p-name').value,
-      email: document.getElementById('p-email').value,
-      phone: document.getElementById('p-phone').value,
-      notes: document.getElementById('p-notes').value,
-      gender: document.getElementById('p-gender').value,
-    });
-  }
-  function getPatients() { api('/api/patients'); }
-  function getPatient() { api(`/api/patients/${document.getElementById('p-id').value}`); }
-  function deletePatient() { api(`/api/patients/${document.getElementById('p-id').value}`, 'DELETE'); }
-  function updatePatient() {
-    api(`/api/patients/${document.getElementById('p-id').value}`, 'PUT', {
-      name: document.getElementById('p-name-id').value,
-      phone: document.getElementById('p-phone-id').value,
-      notes: document.getElementById('p-notes-id').value,
-      gender: document.getElementById('p-gender-id').value,
-    });
-  }
+      function createAppointment() {
+        api("/api/appointments", "POST", {
+          patientName: document.getElementById("a-patient-name").value,
+          doctorName: document.getElementById("a-doctor-name").value,
+          date: document.getElementById("a-date").value,
+          status: document.getElementById("a-status").value,
+        });
+      }
+      function getAppointments() {
+        api("/api/appointments");
+      }
+      function getAppointment() {
+        api(`/api/appointments/${document.getElementById("a-id").value}`);
+      }
+      function deleteAppointment() {
+        api(
+          `/api/appointments/${document.getElementById("a-id").value}`,
+          "DELETE",
+        );
+      }
+      function updateAppointment() {
+        api(
+          `/api/appointments/${document.getElementById("a-id").value}`,
+          "PUT",
+          {
+            patientName: document.getElementById("a-patient-name-id").value,
+            doctorName: document.getElementById("a-doctor-name-id").value,
+            date: document.getElementById("a-date-id").value,
+            status: document.getElementById("a-status-id").value,
+          },
+        );
+      }
 
-  function createAppointment() {
-    api('/api/appointments', 'POST', {
-      patientName: document.getElementById('a-patient-name').value,
-      doctorName: document.getElementById('a-doctor-name').value,
-      date: document.getElementById('a-date').value,
-      status: document.getElementById('a-status').value,
-    });
-  }
-  function getAppointments() { api('/api/appointments'); }
-  function getAppointment() { api(`/api/appointments/${document.getElementById('a-id').value}`); }
-  function deleteAppointment() { api(`/api/appointments/${document.getElementById('a-id').value}`, 'DELETE'); }
-  function updateAppointment() {
-    api(`/api/appointments/${document.getElementById('a-id').value}`, 'PUT', {
-      patientName: document.getElementById('a-patient-name-id').value,
-      doctorName: document.getElementById('a-doctor-name-id').value,
-      date: document.getElementById('a-date-id').value,
-      status: document.getElementById('a-status-id').value,
-    });
-  }
+      async function uploadPdf() {
+        const file = document.getElementById("ai-pdf").files[0];
+        if (!file) {
+          show("Select a PDF file first", true);
+          return;
+        }
+        loading();
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          const res = await fetch(`${BASE}/api/upload`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${accessToken}` },
+            body: formData,
+          });
+          const text = await res.text();
+          try {
+            show(JSON.parse(text), !res.ok);
+          } catch {
+            show(text, !res.ok);
+          }
+        } catch (err) {
+          show("Error: " + err.message, true);
+        }
+      }
 
-  async function uploadPdf() {
-    const file = document.getElementById("ai-pdf").files[0];
-    if (!file) { show("Select a PDF file first", true); return; }
-    loading();
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch(`${BASE}/api/upload`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}` },
-        body: formData,
-      });
-      const text = await res.text();
-      try { show(JSON.parse(text), !res.ok); } catch { show(text, !res.ok); }
-    } catch (err) { show("Error: " + err.message, true); }
-  }
-
-  async function askAi() {
-    const question = document.getElementById("ai-question").value;
-    if (!question) { show("Type a question first", true); return; }
-    await api("/api/ask", "POST", { question });
-  }
-</script>
-</body>
+      async function askAi() {
+        const question = document.getElementById("ai-question").value;
+        if (!question) {
+          show("Type a question first", true);
+          return;
+        }
+        await api("/api/ask", "POST", { question });
+      }
+    </script>
+  </body>
 </html>

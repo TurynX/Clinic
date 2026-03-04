@@ -14,6 +14,7 @@ import { FastifyAdapter } from "@bull-board/fastify";
 import { queue } from "./lib/redis.js";
 import multipart from "@fastify/multipart";
 import helmet from "@fastify/helmet";
+import fastifyCors from "@fastify/cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,9 +22,25 @@ const __dirname = path.dirname(__filename);
 export const app = fastify();
 
 export const buildApp = async () => {
+  await app.register(fastifyCors, {
+    origin: ["http://localhost:3000", "https://clinic-api-krh9.onrender.com"],
+    credentials: true,
+  });
   await app.register(helmet, {
     global: true,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrcAttr: ["'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+        fontSrc: ["'self'", "fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:"],
+        connectSrc: ["'self'", "https://clinic-api-krh9.onrender.com"],
+      },
+    },
   });
+
   await app.register(fastifyStatic, {
     root: path.join(__dirname, "../public"),
     prefix: "/",
