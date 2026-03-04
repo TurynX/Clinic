@@ -6,6 +6,7 @@ langchain-cohere==0.3.4
 langchain-community==0.3.24
 langchain-groq==0.3.2
 langchain-text-splitters==0.3.8
+python-multipart
 faiss-cpu
 pypdf
 groq
