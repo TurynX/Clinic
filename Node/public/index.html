@@ -1089,10 +1089,10 @@
     </div>
 
     <script>
-      let BASE =
+      let BASE = (
         localStorage.getItem("baseUrl") ||
-        "https://clinic-api-krh9.onrender.com";
-      document.getElementById("base-url-input").value = BASE;
+        "https://clinic-api-krh9.onrender.com"
+      ).replace(/\/$/, "");
 
       let accessToken = localStorage.getItem("accessToken") || "";
       let refreshToken = localStorage.getItem("refreshToken") || "";
