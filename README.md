@@ -1,6 +1,6 @@
 # 🏥 Clinic API
 
-A REST API for managing medical appointments, built with Node.js and TypeScript.
+A REST API for managing medical appointments, built with Node.js and TypeScript, with an AI-powered RAG system for document querying.
 
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
@@ -8,6 +8,9 @@ A REST API for managing medical appointments, built with Node.js and TypeScript.
 ![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)
 
 🔗 **Live:** https://clinic-api-krh9.onrender.com
 
@@ -15,7 +18,7 @@ A REST API for managing medical appointments, built with Node.js and TypeScript.
 
 ## 📋 About
 
-Clinic API allows clinics to manage doctors, receptionists and patients. Users can register, login and schedule appointments. Built to practice backend development, authentication and job queues.
+Clinic API allows clinics to manage doctors, receptionists and patients. Users can register, login and schedule appointments. Built to practice backend development, authentication, job queues, and AI-powered document querying with RAG.
 
 ---
 
@@ -29,11 +32,14 @@ Clinic API allows clinics to manage doctors, receptionists and patients. Users c
 - 📧 Email confirmation via BullMQ queue
 - 🚦 Rate limiting with Redis
 - ✅ Integration tests with Vitest
+- 🤖 RAG system — upload PDFs and query them with AI
+- 🔒 Security hardened with Helmet + CORS
 
 ---
 
 ## 🛠 Technologies
 
+### Node.js Service
 - **Runtime:** Node.js
 - **Framework:** Fastify
 - **Language:** TypeScript
@@ -43,6 +49,14 @@ Clinic API allows clinics to manage doctors, receptionists and patients. Users c
 - **Auth:** JWT + Bcrypt
 - **Validation:** Zod
 - **Tests:** Vitest
+- **Security:** Helmet, CORS
+
+### Python AI Service
+- **Framework:** FastAPI
+- **LLM:** Groq (LLaMA 3.3 70b)
+- **Embeddings:** Cohere (embed-english-v3.0)
+- **Vector Store:** FAISS
+- **Orchestration:** LangChain
 
 ---
 
@@ -51,20 +65,28 @@ Clinic API allows clinics to manage doctors, receptionists and patients. Users c
 ### Prerequisites
 
 - Node.js 20+
+- Python 3.11+
 - PostgreSQL
 - Redis
 
-### Installation
+### Node.js Installation
 
 ```bash
 git clone https://github.com/TurynX/Clinic-API.git
-cd Clinic-API
+cd Clinic-API/Node
 npm install
+```
+
+### Python Installation
+
+```bash
+cd Clinic-API/Python
+pip install -r requirements.txt
 ```
 
 ### Environment Variables
 
-Create a `.env` file:
+Create a `.env` file in `/Node`:
 
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/clinic"
@@ -80,6 +102,15 @@ SMTP_HOST="smtp.gmail.com"
 SMTP_PORT=587
 SMTP_USER="your_email@gmail.com"
 SMTP_PASS="your_app_password"
+
+PYTHON_URL="http://localhost:8000"
+```
+
+Create a `.env` file in `/Python`:
+
+```env
+GROQ_API_KEY="your_groq_api_key"
+COHERE_API_KEY="your_cohere_api_key"
 ```
 
 ### Database
@@ -92,10 +123,15 @@ npx prisma generate
 ### Run
 
 ```bash
-npm run dev
+# Node.js
+cd Node && npm run dev
+
+# Python (separate terminal)
+cd Python && uvicorn main:app --reload
 ```
 
-Server runs on `http://localhost:3000`
+Node runs on `http://localhost:3000`  
+Python runs on `http://localhost:8000`
 
 ---
 
@@ -140,6 +176,25 @@ Tests use a separate database configured in `.env.test`.
 | GET    | `/api/appointments/:id` | Receptionist | Get appointment    |
 | PUT    | `/api/appointments/:id` | Doctor       | Update appointment |
 | DELETE | `/api/appointments/:id` | Doctor       | Delete appointment |
+
+### AI / RAG
+
+| Method | Route          | Role   | Description                        |
+| ------ | -------------- | ------ | ---------------------------------- |
+| POST   | `/api/upload`  | Auth   | Upload PDF to build knowledge base |
+| POST   | `/api/ask`     | Auth   | Ask questions about uploaded PDF   |
+
+---
+
+## 🤖 RAG Architecture
+
+```
+PDF Upload → Text extraction → Chunking (500 tokens)
+→ Cohere Embeddings → FAISS Vector Store
+
+Question → History-aware retriever → FAISS search
+→ Context + LLaMA 3.3 70b (Groq) → Answer
+```
 
 ---
 
