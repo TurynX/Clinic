@@ -13,6 +13,7 @@ import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { FastifyAdapter } from "@bull-board/fastify";
 import { queue } from "./lib/redis.js";
 import multipart from "@fastify/multipart";
+import helmet from "@fastify/helmet";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +21,9 @@ const __dirname = path.dirname(__filename);
 export const app = fastify();
 
 export const buildApp = async () => {
+  await app.register(helmet, {
+    global: true,
+  });
   await app.register(fastifyStatic, {
     root: path.join(__dirname, "../public"),
     prefix: "/",
